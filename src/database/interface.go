@@ -16,4 +16,5 @@ type DatabaseInteractions interface {
 	GetSnippetsByLanguageAndTag(lang models.Language, tag string) ([]models.CodeSnippet, error)
 	GetSnippetByUUID(u uuid.UUID) (models.CodeSnippet, error)
 	GetSnippetHistoryByUUID(u uuid.UUID) ([]models.CodeSnippet, error)
+	DeleteSnippetByUUID(u uuid.UUID) error
 }

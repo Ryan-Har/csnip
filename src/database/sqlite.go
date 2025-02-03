@@ -219,7 +219,7 @@ func (s SQLiteHandler) GetSnippetByUUID(u uuid.UUID) (models.CodeSnippet, error)
 	return convertSqliteSnippetToCodeSnippet(dbSnippet), nil
 }
 
-// GetSnippetsByUUID returns a single snippet matching the UUID
+// GetSnippetHistoryByUUID returns a the snippet history
 func (s SQLiteHandler) GetSnippetHistoryByUUID(u uuid.UUID) ([]models.CodeSnippet, error) {
 	var responseSnippets []models.CodeSnippet
 
@@ -233,6 +233,15 @@ func (s SQLiteHandler) GetSnippetHistoryByUUID(u uuid.UUID) ([]models.CodeSnippe
 	}
 
 	return responseSnippets, nil
+}
+
+// DeleteSnippetByUUID returns a single snippet matching the UUID
+func (s SQLiteHandler) DeleteSnippetByUUID(u uuid.UUID) error {
+	err := s.queries.DeleteSnippetByUUID(context.Background(), u.String())
+	if err != nil {
+		return fmt.Errorf("failed to delete snippet by uuid: %w", err)
+	}
+	return nil
 }
 
 // Convert Snippet model -> Snippet Create Params (DB)

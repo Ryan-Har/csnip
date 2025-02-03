@@ -60,6 +60,8 @@ func GetOptions() (Options, error) {
 		opt.CliOpts = handleAddFlagset()
 	case "update":
 		opt.CliOpts = handleUpdateFlagset()
+	case "delete":
+		opt.CliOpts = handleDeleteFlagset()
 	default:
 		fmt.Println("Unknown command: ", os.Args[1])
 		os.Exit(1)
@@ -208,6 +210,28 @@ func handleUpdateFlagset() cli.CLIOpts {
 		} else {
 			cliOpts.FlagOptions[cli.FlagOptionCode] = *codeFlag
 		}
+	}
+
+	return cliOpts
+}
+
+func handleDeleteFlagset() cli.CLIOpts {
+	var cliOpts cli.CLIOpts
+	cliOpts.OptType = cli.OptTypeDelete
+	cliOpts.FlagOptions = map[cli.FlagOption]string{}
+
+	deleteCmd := flag.NewFlagSet("delete", flag.ExitOnError)
+	idFlag := deleteCmd.String("i", "", "Delete by uuid of the code snippet")
+
+	deleteCmd.Parse(os.Args[2:])
+	if deleteCmd.Parsed() {
+		if deleteCmd.NFlag() == 0 || *idFlag == "" {
+			fmt.Println(" uuid (-i) flags must be used")
+			deleteCmd.Usage()
+			os.Exit(1)
+		}
+
+		cliOpts.FlagOptions[cli.FlagOptionUUID] = *idFlag
 	}
 
 	return cliOpts

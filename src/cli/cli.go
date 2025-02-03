@@ -26,6 +26,7 @@ const (
 	OptTypeGet    OptType = "GET"
 	OptTypeUpdate OptType = "UPDATE"
 	OptTypeAdd    OptType = "ADD"
+	OptTypeDelete OptType = "DELETE"
 )
 
 func (o OptType) String() string {
@@ -77,6 +78,14 @@ func (c *CLIOpts) Run(db database.DatabaseInteractions) {
 			os.Exit(1)
 		}
 		fmt.Println("Code snippet updated")
+		os.Exit(0)
+	case OptTypeDelete:
+		err := c.handleDeleteOptType(db)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		fmt.Println("Code snippet deleted")
 		os.Exit(0)
 	default:
 		fmt.Println("Unknown operation")
@@ -155,6 +164,21 @@ func (c *CLIOpts) handleUpdateOptType(db database.DatabaseInteractions) error {
 	_, err = db.UpdateSnippet(id, cs)
 	if err != nil {
 		return fmt.Errorf("unable to handle ADD with the provided options %w", err)
+	}
+
+	return nil
+}
+
+func (c *CLIOpts) handleDeleteOptType(db database.DatabaseInteractions) error {
+
+	id, err := uuid.Parse(c.FlagOptions[FlagOptionUUID])
+	if err != nil {
+		return fmt.Errorf("unable to parse provided UUID")
+	}
+
+	err = db.DeleteSnippetByUUID(id)
+	if err != nil {
+		return fmt.Errorf("unable to handle DELETE with the provided options %w", err)
 	}
 
 	return nil

@@ -42,7 +42,7 @@ const (
 	FlagOptionAll         FlagOption = "All"
 	FlagOptionCode        FlagOption = "Code"
 	FlagOptionName        FlagOption = "Name"
-	FlagOptionDescription FlagOption = "Dsecription"
+	FlagOptionDescription FlagOption = "Description"
 )
 
 func (c *CLIOpts) Run(db database.DatabaseInteractions) {

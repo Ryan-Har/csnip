@@ -46,7 +46,7 @@ func exampleUseOfChroma() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	lexer := lexers.Get(snip.Language.String())
+	lexer := lexers.Get(snip.Language)
 	if lexer == nil {
 		lexer = lexers.Fallback
 	}

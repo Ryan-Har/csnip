@@ -1,10 +1,12 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"os"
 
+	"github.com/Ryan-Har/csnip/common"
 	"github.com/Ryan-Har/csnip/common/models"
 	"github.com/Ryan-Har/csnip/database"
 	"github.com/alecthomas/chroma/v2/formatters"
@@ -50,6 +52,9 @@ func (c *CLIOpts) Run(db database.DatabaseInteractions) {
 	case OptTypeGet:
 		snippets, err := c.handleGetOptType(db)
 		if err != nil {
+			if errors.Is(err, database.ErrNoSnippetsFound) {
+
+			}
 			fmt.Println("Error occured retrieving code snippets: ", err)
 			os.Exit(1)
 		}
@@ -99,7 +104,12 @@ func (c *CLIOpts) handleAddOptType(db database.DatabaseInteractions) error {
 	var cs models.CodeSnippet
 
 	cs.Code = fOpts[FlagOptionCode]
-	cs.Language = models.ValidateLanguage(fOpts[FlagOptionLanguage])
+
+	if common.ValidateLanguage(fOpts[FlagOptionLanguage]) {
+		cs.Language = fOpts[FlagOptionLanguage]
+	} else {
+		return fmt.Errorf("invalid language supplied: %v", fOpts[FlagOptionLanguage])
+	}
 
 	if name, ok := fOpts[FlagOptionName]; ok {
 		cs.Name = name
@@ -124,15 +134,13 @@ func (c *CLIOpts) handleGetOptType(db database.DatabaseInteractions) ([]models.C
 	var snippets []models.CodeSnippet
 
 	if len(fOpts) == 2 && fOpts[FlagOptionLanguage] != "" && fOpts[FlagOptionTag] != "" {
-		lang := models.ValidateLanguage(fOpts[FlagOptionLanguage])
-		return db.GetSnippetsByLanguageAndTag(lang, fOpts[FlagOptionTag])
+		return db.GetSnippetsByLanguageAndTag(fOpts[FlagOptionLanguage], fOpts[FlagOptionTag])
 	}
 	if fOpts[FlagOptionAll] != "" {
 		return db.GetSnippets(1, 100)
 	}
 	if fOpts[FlagOptionLanguage] != "" {
-		lang := models.ValidateLanguage(fOpts[FlagOptionLanguage])
-		return db.GetSnippetsByLanguage(lang)
+		return db.GetSnippetsByLanguage(fOpts[FlagOptionLanguage])
 	}
 	if fOpts[FlagOptionTag] != "" {
 		return db.GetSnippetsByTag(fOpts[FlagOptionTag])
@@ -190,7 +198,7 @@ func displaySnippetList(snippets []models.CodeSnippet) {
 		fmt.Printf("%-36s	%-25s	%-10s	%-20s	%-30s	%-20s\n",
 			truncate(s.Uuid.String(), 36),
 			truncate(s.Name, 25),
-			truncate(s.Language.String(), 10),
+			truncate(s.Language, 10),
 			truncate(s.Tags, 20),
 			truncate(s.Description, 30),
 			truncate(s.Source, 20),
@@ -199,7 +207,7 @@ func displaySnippetList(snippets []models.CodeSnippet) {
 }
 
 func displaySingleSnippet(snippet models.CodeSnippet, theme string) {
-	lexer := lexers.Get(snippet.Language.String())
+	lexer := lexers.Get(snippet.Language)
 	if lexer == nil {
 		lexer = lexers.Fallback
 	}

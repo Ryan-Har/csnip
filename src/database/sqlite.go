@@ -3,9 +3,11 @@ package database
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"sync"
 
+	"github.com/Ryan-Har/csnip/common"
 	"github.com/Ryan-Har/csnip/common/models"
 	"github.com/Ryan-Har/csnip/database/sqlite"
 	"github.com/google/uuid"
@@ -56,14 +58,14 @@ func openSQLiteDB(dbLoc string) (*sql.DB, error) {
 }
 
 func (s SQLiteHandler) PopulateHelloWorldSnippets() error {
-	examples := models.GetHelloWorldExamples()
+	examples := common.GetHelloWorldExamples()
 	for lang, code := range examples {
 		err := s.AddNewSnippet(models.CodeSnippet{
-			Name:        "Hello World Example in " + lang.String(),
+			Name:        "Hello World Example in " + lang,
 			Code:        code,
 			Language:    lang,
 			Tags:        "example,generated",
-			Description: "Hello World Example in " + lang.String(),
+			Description: "Hello World Example in " + lang,
 			Source:      "generated",
 		})
 		if err != nil {
@@ -146,6 +148,9 @@ func (s SQLiteHandler) GetSnippets(page int64, limit int64) ([]models.CodeSnippe
 
 	dbSnippets, err := s.queries.ListSnippetsByPage(context.Background(), pageParams)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return responseSnippets, ErrNoSnippetsFound
+		}
 		return responseSnippets, fmt.Errorf("failed to retrieve snippets: %w", err)
 	}
 
@@ -157,11 +162,14 @@ func (s SQLiteHandler) GetSnippets(page int64, limit int64) ([]models.CodeSnippe
 }
 
 // GetSnippetsByLanguage returns a list of snippets
-func (s SQLiteHandler) GetSnippetsByLanguage(lang models.Language) ([]models.CodeSnippet, error) {
+func (s SQLiteHandler) GetSnippetsByLanguage(lang string) ([]models.CodeSnippet, error) {
 	var responseSnippets []models.CodeSnippet
 
-	dbSnippets, err := s.queries.GetSnippetByLanguage(context.Background(), lang.String())
+	dbSnippets, err := s.queries.GetSnippetByLanguage(context.Background(), lang)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return responseSnippets, ErrNoSnippetsFound
+		}
 		return responseSnippets, fmt.Errorf("failed to retrieve snippets: %w", err)
 	}
 
@@ -178,6 +186,9 @@ func (s SQLiteHandler) GetSnippetsByTag(tag string) ([]models.CodeSnippet, error
 
 	dbSnippets, err := s.queries.GetSnippetByTag(context.Background(), tag)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return responseSnippets, ErrNoSnippetsFound
+		}
 		return responseSnippets, fmt.Errorf("failed to retrieve snippets: %w", err)
 	}
 
@@ -189,16 +200,19 @@ func (s SQLiteHandler) GetSnippetsByTag(tag string) ([]models.CodeSnippet, error
 }
 
 // GetSnippetsByLanguageAndTag returns a list of snippets where language matches and the tag string provided patially matches the list of tags in the database
-func (s SQLiteHandler) GetSnippetsByLanguageAndTag(lang models.Language, tag string) ([]models.CodeSnippet, error) {
+func (s SQLiteHandler) GetSnippetsByLanguageAndTag(lang string, tag string) ([]models.CodeSnippet, error) {
 	var responseSnippets []models.CodeSnippet
 
 	params := sqlite.GetSnippetByLanguageAndTagParams{
-		Language: lang.String(),
+		Language: lang,
 		INSTR:    tag,
 	}
 
 	dbSnippets, err := s.queries.GetSnippetByLanguageAndTag(context.Background(), params)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return responseSnippets, ErrNoSnippetsFound
+		}
 		return responseSnippets, fmt.Errorf("failed to retrieve snippets: %w", err)
 	}
 
@@ -213,6 +227,9 @@ func (s SQLiteHandler) GetSnippetsByLanguageAndTag(lang models.Language, tag str
 func (s SQLiteHandler) GetSnippetByUUID(u uuid.UUID) (models.CodeSnippet, error) {
 	dbSnippet, err := s.queries.GetSnippetByUUID(context.Background(), u.String())
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return models.CodeSnippet{}, ErrNoSnippetsFound
+		}
 		return models.CodeSnippet{}, fmt.Errorf("failed to retrieve snippets: %w", err)
 	}
 
@@ -225,6 +242,9 @@ func (s SQLiteHandler) GetSnippetHistoryByUUID(u uuid.UUID) ([]models.CodeSnippe
 
 	dbSnippets, err := s.queries.GetSnippetVersions(context.Background(), u.String())
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return responseSnippets, ErrNoSnippetsFound
+		}
 		return responseSnippets, fmt.Errorf("failed to retrieve snippets: %w", err)
 	}
 
@@ -250,7 +270,7 @@ func codeSnippetModelToDbCreateSnippetParams(m models.CodeSnippet) sqlite.Create
 		Uuid:        m.Uuid.String(),
 		Name:        toNullString(m.Name),
 		Code:        m.Code,
-		Language:    m.Language.String(),
+		Language:    m.Language,
 		Tags:        toNullString(m.Tags),
 		Description: toNullString(m.Description),
 		Source:      toNullString(m.Source),
@@ -285,7 +305,7 @@ func convertSqliteSnippetToCodeSnippet(s sqlite.Snippet) models.CodeSnippet {
 		Uuid:         parsedUUID,
 		Name:         getString(s.Name),
 		Code:         s.Code,
-		Language:     models.ValidateLanguage(s.Language),
+		Language:     s.Language,
 		Tags:         getString(s.Tags),
 		Description:  getString(s.Description),
 		Source:       getString(s.Source),

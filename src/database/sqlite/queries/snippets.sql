@@ -27,7 +27,7 @@ LIMIT :limit OFFSET :offset;
 
 -- name: GetSnippetByLanguage :many
 -- Get last version of a snippets by language
-SELECT * FROM snippets WHERE language = ? 
+SELECT * FROM snippets WHERE LOWER(language) = LOWER(?)
 AND superseded_by IS NULL
 ORDER BY id DESC;
 

@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/Ryan-Har/csnip/cli"
-	"github.com/Ryan-Har/csnip/common/models"
+	"github.com/Ryan-Har/csnip/common"
 )
 
 type RunType int
@@ -148,14 +148,13 @@ func handleAddFlagset() cli.CLIOpts {
 			cliOpts.FlagOptions[cli.FlagOptionCode] = *codeFlag
 		}
 
-		validLanguage := models.ValidateLanguage(*langFlag)
-		if validLanguage == models.LanguageOther {
+		if !common.ValidateLanguage(*langFlag) {
 			// prompt for the a supported language
 			fmt.Println("Language provided unknown, please enter one of the following:")
-			fmt.Println(strings.Join(models.ListValidLanguages()[:], ","))
+			fmt.Println(strings.Join(common.ListValidLanguages(), ","))
 			os.Exit(1)
 		} else {
-			cliOpts.FlagOptions[cli.FlagOptionLanguage] = validLanguage.String()
+			cliOpts.FlagOptions[cli.FlagOptionLanguage] = *langFlag
 		}
 
 		if *nameFlag != "" {

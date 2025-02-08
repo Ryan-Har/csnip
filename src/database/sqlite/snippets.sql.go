@@ -103,14 +103,14 @@ func (q *Queries) GetSnippetByID(ctx context.Context, id int64) (Snippet, error)
 }
 
 const getSnippetByLanguage = `-- name: GetSnippetByLanguage :many
-SELECT id, uuid, name, code, language, tags, description, source, date_added, version, superseded_by FROM snippets WHERE language = ? 
+SELECT id, uuid, name, code, language, tags, description, source, date_added, version, superseded_by FROM snippets WHERE LOWER(language) = LOWER(?)
 AND superseded_by IS NULL
 ORDER BY id DESC
 `
 
 // Get last version of a snippets by language
-func (q *Queries) GetSnippetByLanguage(ctx context.Context, language string) ([]Snippet, error) {
-	rows, err := q.db.QueryContext(ctx, getSnippetByLanguage, language)
+func (q *Queries) GetSnippetByLanguage(ctx context.Context, lower string) ([]Snippet, error) {
+	rows, err := q.db.QueryContext(ctx, getSnippetByLanguage, lower)
 	if err != nil {
 		return nil, err
 	}

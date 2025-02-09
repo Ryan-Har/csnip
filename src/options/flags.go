@@ -9,6 +9,7 @@ import (
 
 	"github.com/Ryan-Har/csnip/cli"
 	"github.com/Ryan-Har/csnip/common"
+	"github.com/Ryan-Har/csnip/tui"
 )
 
 type RunType int
@@ -22,6 +23,7 @@ const (
 type Options struct {
 	RunType RunType
 	CliOpts cli.CLIOpts
+	TuiOpts tui.TUIOpts
 }
 
 func GetOptions() (Options, error) {
@@ -48,6 +50,9 @@ func GetOptions() (Options, error) {
 		return opt, nil
 	} else if len(os.Args) == 1 {
 		opt.RunType = RunTypeTui // not yet implemented
+		opt.TuiOpts = tui.TUIOpts{
+			Theme: CodeSyntaxHighlightingTheme,
+		}
 		return opt, nil
 	} else {
 		opt.RunType = RunTypeCli

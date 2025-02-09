@@ -28,7 +28,7 @@ func main() {
 	case options.RunTypeCli:
 		opt.CliOpts.Run(db)
 	case options.RunTypeTui:
-		fmt.Println("running as tui")
+		opt.TuiOpts.Run(db)
 	case options.RunTypeDaemon:
 		fmt.Println("running as daemon")
 	}

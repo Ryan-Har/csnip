@@ -29,15 +29,19 @@ type model struct {
 	currentState state                         // view currently being used
 	viewModel    tea.Model
 	editModel    tea.Model
+	Width        int
+	Height       int
 }
 
 // Messages confirm users intent
+type ClearScreenMsg struct{}
 
 func initialModel(db database.DatabaseInteractions) model {
 	return model{
 		db:           db,
 		currentState: viewState,
 		viewModel:    viewTui.New(db),
+		editModel:    editTui.New(db),
 	}
 }
 
@@ -55,20 +59,35 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			editTui.WithCodeSnippet(models.CodeSnippet(msg)),
 			editTui.InEditMode())
 		m.currentState = editState
+		return m, tea.Batch(m.clearScreen(), m.editModel.Init())
 	case viewTui.SingleViewMsg:
 		m.editModel = editTui.New(m.db,
 			editTui.WithCodeSnippet(models.CodeSnippet(msg)))
 		m.currentState = editState
+		return m, tea.Batch(m.clearScreen(), m.editModel.Init())
+	case viewTui.SingleAddMsg:
+		m.editModel = editTui.New(m.db,
+			editTui.InEditMode())
+		m.currentState = editState
+		return m, tea.Batch(m.clearScreen(), m.editModel.Init())
+	case editTui.WindowSizeReqMsg:
+		return m, m.sendWindowsSizeMessage()
 	// propogate windowSizeMsg so subModels can size correctly
 	case tea.WindowSizeMsg:
-		newViewModel, newCmd := m.viewModel.Update(msg)
+		m.Width = msg.Width
+		m.Height = msg.Height
+		newViewModel, newViewCmd := m.viewModel.Update(msg)
 		m.viewModel = newViewModel
-		cmds = append(cmds, newCmd)
+		newEditModel, newEditCmd := m.editModel.Update(msg)
+		m.editModel = newEditModel
+		cmds = append(cmds, newViewCmd, newEditCmd)
 	// always quit if requested
 	case tea.KeyMsg:
 		if msg.String() == "ctrl+c" {
 			return m, tea.Quit
 		}
+	case ClearScreenMsg:
+		return m, tea.ClearScreen
 	}
 
 	switch m.currentState {
@@ -82,10 +101,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmd = newCmd
 	}
 
-	// thoughts: seperate pages into their own models. For example, the addModel will contain the required fields for creating a snippet.
-	// and deleteModel will contain a single snippet along with things such as confirmations. Each item can then handle it's own keypresses.
-	// This should allow for easier help menus and easier to follow code.
-	//
 	cmds = append(cmds, cmd)
 	return m, tea.Batch(cmds...)
 }
@@ -109,6 +124,22 @@ func (t *TUIOpts) Run(db database.DatabaseInteractions) {
 	if _, err := p.Run(); err != nil {
 		fmt.Println("Error running program:", err)
 		os.Exit(1)
+	}
+}
+
+func (m model) clearScreen() tea.Cmd {
+	return func() tea.Msg {
+		return ClearScreenMsg{}
+	}
+}
+
+func (m model) sendWindowsSizeMessage() tea.Cmd {
+	return func() tea.Msg {
+		msg := tea.WindowSizeMsg{
+			Height: m.Height,
+			Width:  m.Width,
+		}
+		return msg
 	}
 }
 

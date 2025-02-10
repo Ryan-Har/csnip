@@ -36,6 +36,7 @@ type ErrMsg struct {
 // Messages for use in the main model
 type SingleViewMsg models.CodeSnippet
 type SingleEditMsg models.CodeSnippet
+type SingleAddMsg struct{}
 
 // creates new tea.Model interface
 func New(db database.DatabaseInteractions) tea.Model {
@@ -70,17 +71,18 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width = msg.Width
 		return m, m.generateSnippetsTable(m.CodeSnippets)
 	case tea.KeyMsg:
+		// First, allow the table to process the key event
+		var cmd tea.Cmd
+		m.CodeSnippetsTable, cmd = m.CodeSnippetsTable.Update(msg)
 		switch {
-		case key.Matches(msg, m.keys.Down):
-			m.CodeSnippetsTable.MoveDown(1)
-		case key.Matches(msg, m.keys.Up):
-			m.CodeSnippetsTable.MoveUp(1)
 		case key.Matches(msg, m.keys.View):
 			focused := m.CodeSnippets[m.CodeSnippetsTable.Cursor()]
 			return m, m.openForViewing(focused)
 		case key.Matches(msg, m.keys.Edit):
 			focused := m.CodeSnippets[m.CodeSnippetsTable.Cursor()]
 			return m, m.openForEditing(focused)
+		case key.Matches(msg, m.keys.Add):
+			return m, m.addNewSnippet()
 		case key.Matches(msg, m.keys.Help):
 			m.help.ShowAll = !m.help.ShowAll
 		case key.Matches(msg, m.keys.Quit):
@@ -92,7 +94,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// 	m.currentPage = confirmationPage
 		// 	m.confirmDelete = true
 		// 	return m, nil
-
+		return m, cmd
 	}
 	return m, nil
 }
@@ -144,6 +146,10 @@ var keyMap = KeyMap{
 		key.WithKeys("?"),
 		key.WithHelp("?", "toggle help"),
 	),
+	Add: key.NewBinding(
+		key.WithKeys("a"),
+		key.WithHelp("a", "add new"),
+	),
 }
 
 func (k KeyMap) ShortHelp() []key.Binding {
@@ -152,7 +158,7 @@ func (k KeyMap) ShortHelp() []key.Binding {
 
 func (k KeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
-		{k.Up, k.Down, k.View, k.Edit},
+		{k.Up, k.Down, k.View, k.Edit, k.Add},
 		{k.Help, k.Quit},
 	}
 }
@@ -264,5 +270,11 @@ func (m Model) openForViewing(codeSnip models.CodeSnippet) tea.Cmd {
 func (m Model) openForEditing(codeSnip models.CodeSnippet) tea.Cmd {
 	return func() tea.Msg {
 		return SingleEditMsg(codeSnip)
+	}
+}
+
+func (m Model) addNewSnippet() tea.Cmd {
+	return func() tea.Msg {
+		return SingleAddMsg{}
 	}
 }

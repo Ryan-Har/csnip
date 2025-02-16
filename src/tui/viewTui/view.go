@@ -143,8 +143,8 @@ var keyMap = KeyMap{
 		key.WithHelp("e", "edit"),
 	),
 	Help: key.NewBinding(
-		key.WithKeys("?"),
-		key.WithHelp("?", "toggle help"),
+		key.WithKeys("ctrl+h"),
+		key.WithHelp("ctrl+h", "toggle help"),
 	),
 	Add: key.NewBinding(
 		key.WithKeys("a"),

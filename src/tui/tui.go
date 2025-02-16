@@ -72,6 +72,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Batch(m.clearScreen(), m.editModel.Init())
 	case editTui.WindowSizeReqMsg:
 		return m, m.sendWindowsSizeMessage()
+	case editTui.ReturnToViewMsg:
+		m.currentState = viewState
+		return m, m.viewModel.Init()
 	// propogate windowSizeMsg so subModels can size correctly
 	case tea.WindowSizeMsg:
 		m.Width = msg.Width
